@@ -73,6 +73,7 @@ jobs:
         CIBW_BEFORE_ALL_LINUX: >
           export PREFIX={package}/siliconcompiler/tools/surelog &&
           {package}/.github/workflows/bin/setup_wheel_env_linux.sh
+        CIBW_ENVIRONMENT: CI_BUILD_TYPE=${{ github.event_name }}
         CIBW_ENVIRONMENT_WINDOWS: SC_CMAKEARGS="-DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake."
         CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
         CIBW_SKIP: "pp* *win32 *i686"
@@ -108,3 +109,50 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_DEPLOY }}
+
+  offline_package:
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
+
+      - run: |
+          # Make and enter scratch directory
+          mkdir -p /tmp/sc_package
+          cd /tmp/sc_package
+
+          # Make venv for installing wheels
+          $PYTHON -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install siliconcompiler --find-links $GITHUB_WORKSPACE/dist/
+
+          # Download all dependencies in current env into scdeps/
+          mkdir scdeps
+          pip freeze > scdeps/requirements.txt
+          pip download -r scdeps/requirements.txt -d scdeps
+
+          # Tar up scdeps/
+          tar -czvf scdeps.tar.gz scdeps/
+
+          # Clean up
+          deactivate
+          cd -
+          mv /tmp/sc_package/scdeps.tar.gz scdeps-${{matrix.python-vesion}}.tar.gz
+          rm -rf /tmp/sc_package
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v2
+        with:
+          path: scdeps*.tar.gz

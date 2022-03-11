@@ -104,6 +104,10 @@ for f in glob.glob('siliconcompiler/tools/**/*', recursive=True):
 
 install_reqs, extras_req = parse_reqs()
 
+version = metadata['version']
+if os.environ.get('CI_BUILD_TYPE', '') == 'schedule':
+    version += '+nightly'
+
 setup(
     name="siliconcompiler",
     description="A compiler framework that automates translation from source code to silicon.",
@@ -119,7 +123,7 @@ setup(
         "Bug Tracker": "https://github.com/siliconcompiler/siliconcompiler/issues",
         "Forum": "https://github.com/siliconcompiler/siliconcompiler/discussions"
     },
-    version=metadata['version'],
+    version=version,
     packages=find_packages(where='.', exclude=['tests*']),
 
     # TODO: hack to work around weird scikit-build behavior:
