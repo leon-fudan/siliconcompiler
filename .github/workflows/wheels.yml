@@ -125,29 +125,9 @@ jobs:
           path: dist
 
       - run: |
-          # Make and enter scratch directory
-          mkdir -p /tmp/sc_package
-          cd /tmp/sc_package
-
-          # Make venv for installing wheels
-          $PYTHON -m venv venv
-          source venv/bin/activate
-          pip install --upgrade pip
-          pip install siliconcompiler --find-links $GITHUB_WORKSPACE/dist/
-
-          # Download all dependencies in current env into scdeps/
           mkdir scdeps
-          pip freeze > scdeps/requirements.txt
-          pip download -r scdeps/requirements.txt -d scdeps
-
-          # Tar up scdeps/
-          tar -czvf scdeps.tar.gz scdeps/
-
-          # Clean up
-          deactivate
-          cd -
-          mv /tmp/sc_package/scdeps.tar.gz scdeps-${{matrix.python-vesion}}.tar.gz
-          rm -rf /tmp/sc_package
+          pip download siliconcompiler --find-links dist -d scdeps
+          tar -czvf scdeps-${{matrix.python-version}}.tar.gz scdeps
 
       - name: Upload packages
         uses: actions/upload-artifact@v2
