@@ -84,12 +84,22 @@ jobs:
         CIBW_TEST_COMMAND: >
           pytest --import-mode=append {package}/tests/ -m "not eda" &&
           pytest --import-mode=append {package}/tests/tools/test_surelog.py &&
-          pytest --import-mode=append {package}/tests/core/test_show.py
+          pytest --import-mode=append {package}/tests/core/test_show.py &&
+          mkdir scdeps &&
+          pip download siliconcompiler --find-links wheelhouse -d scdeps &&
+          TARNAME=$(python -c "import sys; print(f'scdeps-{sys.platform}-py{sys.version_info[0]}.{sys.version_info[1]}.tar.gz')") &&
+          tar -czvf $TARNAME scdeps &&
+          rm -rf scdeps
 
     - name: Upload wheels
       uses: actions/upload-artifact@v2
       with:
         path: wheelhouse/*.whl
+
+    - name: Upload offline packages
+      uses: actions/upload-artifact@v2
+      with:
+        path: scdeps*.tar.gz
 
   publish:
     needs: [build_wheels]
@@ -106,30 +116,3 @@ jobs:
       with:
         user: __token__
         password: ${{ secrets.PYPI_DEPLOY }}
-
-  offline_package:
-    needs: [build_wheels]
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
-    steps:
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: artifact
-          path: dist
-
-      - run: |
-          mkdir scdeps
-          pip download siliconcompiler --find-links dist -d scdeps
-          tar -czvf scdeps-${{matrix.python-version}}.tar.gz scdeps
-
-      - name: Upload packages
-        uses: actions/upload-artifact@v2
-        with:
-          path: scdeps*.tar.gz
