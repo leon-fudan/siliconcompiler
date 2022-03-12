@@ -105,8 +105,8 @@ for f in glob.glob('siliconcompiler/tools/**/*', recursive=True):
 install_reqs, extras_req = parse_reqs()
 
 version = metadata['version']
-if os.environ.get('CI_BUILD_TYPE', '') == 'schedule':
-    version += '+nightly'
+if os.environ.get('CI_BUILD_TYPE', '') in ('schedule', 'workflow_dispatch'):
+    version += '+ci'
 
 setup(
     name="siliconcompiler",
