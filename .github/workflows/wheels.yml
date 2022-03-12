@@ -87,7 +87,7 @@ jobs:
           pytest --import-mode=append {package}/tests/core/test_show.py &&
           mkdir scdeps &&
           pip download siliconcompiler --find-links wheelhouse -d scdeps &&
-          TARNAME=$(python -c "import sys; print(f'scdeps-{sys.platform}-py{sys.version_info[0]}.{sys.version_info[1]}.tar.gz')") &&
+          TARNAME=$(python -c "import sys; print('scdeps-' + sys.platform + '-py' + str(sys.version_info[0]) + '.' + str(sys.version_info[1]) +'.tar.gz')") &&
           tar -czvf $TARNAME scdeps &&
           rm -rf scdeps
 
